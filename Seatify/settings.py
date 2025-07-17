@@ -56,6 +56,13 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'  # Redirect after successful login
 LOGOUT_REDIRECT_URL = 'login'  # Redirect after logout
 
+# Cookie settings to help with CSRF issues
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF cookie
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript from accessing the session cookie
+CSRF_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF with modern browsers
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -92,8 +99,8 @@ WSGI_APPLICATION = 'Seatify.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": "libsql.db.backends.sqlite3",
-        "NAME": "libsql://group1-mits-cloud-tech-team.turso.io?authToken=" + os.environ.get('DBAUTHTOKEN')
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
