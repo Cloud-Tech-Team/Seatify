@@ -30,7 +30,7 @@ load_dotenv()
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -56,8 +56,17 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'  # Redirect after successful login
 LOGOUT_REDIRECT_URL = 'login'  # Redirect after logout
 
+# Cookie settings to help with CSRF issues
+# Use secure cookies in production (Cloud Run uses HTTPS)
+CSRF_COOKIE_SECURE = os.environ.get('SECURE_COOKIES', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.environ.get('SECURE_COOKIES', 'False') == 'True'
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF cookie
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript from accessing the session cookie
+CSRF_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF with modern browsers
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Added for static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -92,10 +101,21 @@ WSGI_APPLICATION = 'Seatify.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": "libsql.db.backends.sqlite3",
-        "NAME": "libsql://group1-mits-cloud-tech-team.turso.io?authToken=" + os.environ.get('DBAUTHTOKEN')
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Use the following for Turso database in production
+# Uncomment and set the environment variables in Cloud Run
+if os.environ.get('USE_TURSO', 'False').lower() == 'true':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django_libsql',
+            'NAME': os.environ.get('TURSO_DATABASE_URL', ''),
+            'TURSO_AUTH_TOKEN': os.environ.get('DBAUTHTOKEN', ''),
+        }
+    }
 
 
 # Password validation
@@ -133,6 +153,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 # STATIC_URL = 'static/'
+
+# WhiteNoise configuration for serving static files in production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

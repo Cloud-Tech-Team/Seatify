@@ -55,18 +55,21 @@ class CustomUserCreationForm(UserCreationForm):
     
     class Meta:
         model = User
-        fields = ['email', 'password1', 'password2']
-        # We're using email as the username, so no 'username' field is required
-
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if not email.endswith('@mgits.ac.in'):
-            raise ValidationError("Please use an email ending with '@mgits.ac.in'.")
-        return email
+        fields = ['username', 'email', 'password1', 'password2']
+    
+    # Optional email domain validation - commented out to allow any email for testing
+    # def clean_email(self):
+    #     email = self.cleaned_data.get('email')
+    #     if not email.endswith('@mgits.ac.in'):
+    #         raise ValidationError("Please use an email ending with '@mgits.ac.in'.")
+    #     return email
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = self.cleaned_data['email']  # Set the email as the username
+        # Ensure username is set and email is assigned
+        if not user.username:
+            user.username = self.cleaned_data['email'].split('@')[0]  # Use the part before @ as username
+        user.email = self.cleaned_data['email']
         if commit:
             user.save()
         return user
@@ -76,11 +79,18 @@ def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Registration successful! You can now log in.')
-            return redirect('login')
+            try:
+                user = form.save()
+                username = form.cleaned_data.get('username')
+                messages.success(request, f'Account created for {username}! You can now log in.')
+                return redirect('login')
+            except Exception as e:
+                messages.error(request, f"Error creating user: {str(e)}")
+                print(f"User creation error: {str(e)}")  # Debug information
         else:
-            messages.error(request, "There was an error in your form. Please fix it.")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = CustomUserCreationForm()
 

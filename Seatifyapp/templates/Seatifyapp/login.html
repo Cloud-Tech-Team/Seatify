@@ -11,8 +11,11 @@
     <h1 class="center-title">Seatify</h1> <!-- Added a class for styling -->
     <div class="login-container">
         <h2>Login</h2>
-        <form method="post">
+        <form method="post" action="{% url 'login' %}">
             {% csrf_token %}
+            <!-- Ensure CSRF token is explicitly included -->
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            
             {{ form.as_p }}
             <button type="submit">Login</button>
         </form>

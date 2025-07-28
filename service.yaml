@@ -1,0 +1,37 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: seatify
+spec:
+  template:
+    spec:
+      containers:
+      - image: gcr.io/PROJECT_ID/seatify
+        ports:
+        - containerPort: 80
+        env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: seatify-secrets
+              key: SECRET_KEY
+        - name: DBAUTHTOKEN
+          valueFrom:
+            secretKeyRef:
+              name: seatify-secrets
+              key: DBAUTHTOKEN
+        - name: DEBUG
+          value: "False"
+        - name: SECURE_COOKIES
+          value: "True"
+        - name: USE_TURSO
+          value: "True"
+        - name: TURSO_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: seatify-secrets
+              key: TURSO_DATABASE_URL
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "1"
