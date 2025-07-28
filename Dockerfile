@@ -1,5 +1,5 @@
-# Use official Python 3.13 slim image
-FROM python:3.13-slim
+# Use official Python 3.9 slim image (more stable for production)
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
@@ -19,8 +19,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-ARG DBAUTHTOKEN
-ENV DBAUTHTOKEN=${DBAUTHTOKEN}
+# Environment variables - these will be overridden by Cloud Run settings
+ENV DBAUTHTOKEN=""
+ENV SECRET_KEY="default-dev-secret-key-replace-in-cloud-run"
+ENV DEBUG="False"
+ENV SECURE_COOKIES="True"
+ENV USE_TURSO="False"
+ENV TURSO_DATABASE_URL=""
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
