@@ -9,3 +9,15 @@ env/
 .vscode/
 !db/
 staticfiles/
+secrets.json
+service-deploy.yaml
+*.pyc
+*.pyo
+*.log
+db.sqlite3
+.pytest_cache/
+*.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/

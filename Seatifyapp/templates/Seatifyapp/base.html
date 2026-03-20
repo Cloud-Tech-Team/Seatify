@@ -11,13 +11,7 @@
     <header>
         <h1>Seatify</h1>
         <nav>
-            {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <form action="{% url 'logout' %}" method="POST">
-                    {% csrf_token %}
-                    <button type="submit">Logout</button>
-                </form>                
-            {% endif %}
+            <a href="{% url 'dashboard' %}">Dashboard</a>
         </nav>
     </header>
     <main>

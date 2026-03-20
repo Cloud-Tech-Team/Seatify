@@ -1,6 +1,0 @@
-
-# CSRF trusted origins for Cloud Run
-CSRF_TRUSTED_ORIGINS = [
-    'https://seatify-265910430898.us-central1.run.app',
-    'https://*.run.app',
-]

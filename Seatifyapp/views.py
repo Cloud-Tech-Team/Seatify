@@ -1,7 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from .models import Branch, Semester, SeatingArrangement, SeatingArrangementDataset
 from .forms import SeatingArrangementForm, BranchForm, SemesterForm
@@ -11,9 +8,6 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor
 from datetime import datetime
-from django.contrib.auth.models import User
-from django import forms
-from django.core.exceptions import ValidationError
 
 # Add a new branch
 def add_branch(request):
@@ -49,59 +43,11 @@ def delete_semester(request, semester_id):
     semester.delete()
     return redirect('dashboard')
 
-
-class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password1', 'password2']
-    
-    # Optional email domain validation - commented out to allow any email for testing
-    # def clean_email(self):
-    #     email = self.cleaned_data.get('email')
-    #     if not email.endswith('@mgits.ac.in'):
-    #         raise ValidationError("Please use an email ending with '@mgits.ac.in'.")
-    #     return email
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        # Ensure username is set and email is assigned
-        if not user.username:
-            user.username = self.cleaned_data['email'].split('@')[0]  # Use the part before @ as username
-        user.email = self.cleaned_data['email']
-        if commit:
-            user.save()
-        return user
-
-# Update the view to use the custom form
-def register(request):
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            try:
-                user = form.save()
-                username = form.cleaned_data.get('username')
-                messages.success(request, f'Account created for {username}! You can now log in.')
-                return redirect('login')
-            except Exception as e:
-                messages.error(request, f"Error creating user: {str(e)}")
-                print(f"User creation error: {str(e)}")  # Debug information
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
-    else:
-        form = CustomUserCreationForm()
-
-    return render(request, 'Seatifyapp/register.html', {'form': form})
-@login_required
 def dashboard(request):
     branches = Branch.objects.all()
     semesters = Semester.objects.all()
     return render(request, 'Seatifyapp/dashboard.html', {'branches': branches, 'semesters': semesters})
 
-@login_required
 def create_seating(request):
     if request.method == 'POST':
         form = SeatingArrangementForm(request.POST)
@@ -164,7 +110,6 @@ def preview_seating(request, pk):
         'columns_range': list(range(arrangement.columns)),
     })
 
-@login_required
 def download_pdf(request, pk):
     seating_dataset = SeatingArrangementDataset.objects.filter(arrangement__pk=pk).first()
     if not seating_dataset:

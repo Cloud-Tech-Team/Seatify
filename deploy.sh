@@ -1,42 +1,73 @@
 #!/bin/bash
+# Deployment script for Seatify to Google Cloud Run via Artifact Registry
+# Usage: ./deploy.sh PROJECT_ID REGION [SERVICE_NAME]
 
-# Exit on any error
 set -e
 
 # Check if PROJECT_ID is provided
 if [ -z "$1" ]; then
-  echo "Usage: ./deploy.sh PROJECT_ID"
+  echo "Usage: ./deploy.sh PROJECT_ID REGION [SERVICE_NAME]"
+  echo "Example: ./deploy.sh my-project us-central1 seatify"
   exit 1
 fi
 
 PROJECT_ID=$1
+REGION=${2:-us-central1}
+SERVICE_NAME=${3:-seatify}
 
-echo "Building and deploying Seatify to Cloud Run for project: $PROJECT_ID"
+echo "========================================"
+echo "Deploying Seatify to Google Cloud Run"
+echo "========================================"
+echo "Project ID: $PROJECT_ID"
+echo "Region: $REGION"
+echo "Service Name: $SERVICE_NAME"
+echo "========================================"
+
+# Set the project
+echo "Setting Google Cloud project..."
+gcloud config set project $PROJECT_ID
+
+# Enable required APIs
+echo "Enabling required APIs..."
+gcloud services enable artifactregistry.googleapis.com
+gcloud services enable run.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
+
+# Create Artifact Registry repository (ignore error if it already exists)
+echo "Creating Artifact Registry repository..."
+gcloud artifacts repositories create ${SERVICE_NAME}-repo \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker repository for Seatify" 2>/dev/null || true
+
+# Configure Docker to use Artifact Registry
+echo "Configuring Docker for Artifact Registry..."
+gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
 # Build the Docker image
 echo "Building Docker image..."
-docker build -t gcr.io/$PROJECT_ID/seatify .
+docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}-repo/${SERVICE_NAME}:latest .
 
-# Push to Google Container Registry
-echo "Pushing to Google Container Registry..."
-gcloud auth configure-docker --quiet
-docker push gcr.io/$PROJECT_ID/seatify
-
-# Update the service.yaml file with the project ID
-echo "Updating service configuration..."
-sed "s/PROJECT_ID/$PROJECT_ID/g" service.yaml > service-deploy.yaml
+# Push to Artifact Registry
+echo "Pushing image to Artifact Registry..."
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}-repo/${SERVICE_NAME}:latest
 
 # Deploy to Cloud Run
 echo "Deploying to Cloud Run..."
-gcloud run services replace service-deploy.yaml --project=$PROJECT_ID
+gcloud run deploy $SERVICE_NAME \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}-repo/${SERVICE_NAME}:latest \
+  --platform=managed \
+  --region=$REGION \
+  --allow-unauthenticated \
+  --port=8080 \
+  --memory=512Mi \
+  --cpu=1 \
+  --max-instances=10 \
+  --set-env-vars="DEBUG=False,SECURE_COOKIES=True"
 
-# Clean up temporary files
-rm service-deploy.yaml
-
+echo ""
+echo "========================================"
 echo "Deployment completed successfully!"
-echo "To make the service public, run:"
-echo "gcloud run services add-iam-policy-binding seatify --member=\"allUsers\" --role=\"roles/run.invoker\" --project=$PROJECT_ID"
-
-# Get the URL of the deployed service
-echo "Service URL:"
-gcloud run services describe seatify --format 'value(status.url)' --project=$PROJECT_ID
+echo "========================================"
+gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)'
+echo "========================================"

@@ -38,33 +38,25 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    # Django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'crispy_forms',
     'Seatifyapp',
 ]
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'Seatifyapp/static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # Add this line
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'  # Redirect after successful login
-LOGOUT_REDIRECT_URL = 'login'  # Redirect after logout
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Cookie settings to help with CSRF issues
-# Use secure cookies in production (Cloud Run uses HTTPS)
+# Cookie settings
 CSRF_COOKIE_SECURE = os.environ.get('SECURE_COOKIES', 'False') == 'True'
 SESSION_COOKIE_SECURE = os.environ.get('SECURE_COOKIES', 'False') == 'True'
-CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF cookie
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript from accessing the session cookie
-CSRF_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF with modern browsers
-
-# CSRF trusted origins for Cloud Run
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -100,24 +92,14 @@ WSGI_APPLICATION = 'Seatify.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# Using temporary database in /tmp - data is wiped when container restarts
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': '/tmp/seatify.db',  # Temporary database - gets wiped on container restart
     }
 }
-
-# Use the following for Turso database in production
-# Uncomment and set the environment variables in Cloud Run
-if os.environ.get('USE_TURSO', 'False').lower() == 'true':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django_libsql',
-            'NAME': os.environ.get('TURSO_DATABASE_URL', ''),
-            'TURSO_AUTH_TOKEN': os.environ.get('DBAUTHTOKEN', ''),
-        }
-    }
 
 
 # Password validation
