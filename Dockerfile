@@ -1,41 +1,26 @@
-# Use official Python 3.9 slim image (more stable for production)
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y nginx
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libjpeg-dev \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy configuration files
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Install Python dependencies
+# Copy and install requirements
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application
 COPY . .
 
-# Environment variables - these will be overridden by Cloud Run settings
-ENV DBAUTHTOKEN=""
-ENV SECRET_KEY="default-dev-secret-key-replace-in-cloud-run"
-ENV DEBUG="False"
-ENV SECURE_COOKIES="True"
-ENV USE_TURSO="False"
-ENV TURSO_DATABASE_URL=""
+# Set environment variables
+ENV PORT=8080
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Make entrypoint script executable
+RUN chmod +x entrypoint.sh
 
-# Expose HTTP port
-EXPOSE 80
-
-# Start both services
-CMD nginx -g "daemon off;" & \
-    gunicorn Seatify.wsgi:application \
-    --bind 0.0.0.0:8000 \
-    --workers 3 \
-    --timeout 120
+# Use the entrypoint script
+CMD ["./entrypoint.sh"]

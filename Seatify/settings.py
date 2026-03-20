@@ -64,6 +64,8 @@ CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF cookie
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript from accessing the session cookie
 CSRF_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF with modern browsers
 
+# CSRF trusted origins for Cloud Run
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Added for static files in production
@@ -161,3 +163,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CSRF trusted origins for Cloud Run
+
+# CSRF Configuration for Cloud Run
+CSRF_TRUSTED_ORIGINS = [
+    'https://seatify-265910430898.us-central1.run.app',
+    'https://*.run.app',
+]
